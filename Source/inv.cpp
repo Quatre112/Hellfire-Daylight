@@ -340,16 +340,8 @@ void CheckInvPaste(int pnum, Point cursorPosition)
 		il = ILOC_TWOHAND;
 		done = true;
 	}
-	if (player.GetItemLocation(player.HoldItem) == ILOC_UNEQUIPABLE && il == ILOC_BELT) {
-		if (itemSize == Size { 1, 1 }) {
-			done = true;
-			if (!AllItemsList[player.HoldItem.IDidx].iUsable)
-				done = false;
-			if (!player.CanUseItem(player.HoldItem))
-				done = false;
-			if (player.HoldItem._itype == ItemType::Gold)
-				done = false;
-		}
+	if (il == ILOC_BELT) {
+		done = CanBePlacedOnBelt(player.HoldItem);
 	}
 
 	int8_t it = 0;
@@ -899,7 +891,6 @@ void CheckInvCut(int pnum, Point cursorPosition, bool automaticMove, bool dropIt
 	if (dropItem && !holdItem.isEmpty()) {
 		if (IsStashOpen) {
 			if (AutoPlaceItemInStash(player, holdItem, true)) {
-				holdItem._itype = ItemType::None;
 				NewCursor(CURSOR_HAND);
 			} else {
 				player.SaySpecific(HeroSpeech::WhereWouldIPutThis);
@@ -1176,7 +1167,8 @@ bool CanBePlacedOnBelt(const Item &item)
 {
 	return FitsInBeltSlot(item)
 	    && item._itype != ItemType::Gold
-	    && item._iStatFlag
+	    && MyPlayer->GetItemLocation(item) == ILOC_UNEQUIPABLE
+	    && MyPlayer->CanUseItem(item)
 	    && AllItemsList[item.IDidx].iUsable;
 }
 

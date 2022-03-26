@@ -91,7 +91,6 @@ void CheckStashPaste(Point cursorPosition)
 	if (player.HoldItem._itype == ItemType::Gold) {
 		Stash.gold += player.HoldItem._ivalue;
 		Stash.dirty = true;
-		player.HoldItem._itype = ItemType::None;
 		if (!IsHardwareCursor())
 			SetCursorPos(cursorPosition);
 		NewCursor(CURSOR_HAND);
@@ -358,16 +357,17 @@ void DrawStash(const Surface &out)
 	}
 
 	for (auto slot : PointsInRectangleRange({ { 0, 0 }, { 10, 10 } })) {
-		if (Stash.stashGrids[Stash.GetPage()][slot.x][slot.y] == 0) {
+		uint16_t itemId = Stash.stashGrids[Stash.GetPage()][slot.x][slot.y];
+		if (itemId == 0) {
 			continue; // No item in the given slot
 		}
 
-		uint16_t itemId = Stash.stashGrids[Stash.GetPage()][slot.x][slot.y] - 1;
-		if (Stash.stashList[itemId].position != slot) {
+		itemId -= 1;
+		Item &item = Stash.stashList[itemId];
+		if (item.position != slot) {
 			continue; // Not the first slot of the item
 		}
 
-		Item &item = Stash.stashList[itemId];
 		int frame = item._iCurs + CURSOR_FIRSTITEM;
 
 		const Point position = GetStashSlotCoord(item.position) + offset;
@@ -375,11 +375,11 @@ void DrawStash(const Surface &out)
 		const int celFrame = GetInvItemFrame(frame);
 
 		if (pcursstashitem == itemId) {
-			uint8_t color = GetOutlineColor(Stash.stashList[itemId], true);
+			uint8_t color = GetOutlineColor(item, true);
 			CelBlitOutlineTo(out, color, position, cel, celFrame, false);
 		}
 
-		CelDrawItem(Stash.stashList[itemId], out, position, cel, celFrame);
+		CelDrawItem(item, out, position, cel, celFrame);
 	}
 
 	Point position = GetPanelPosition(UiPanels::Stash);
@@ -420,15 +420,16 @@ uint16_t CheckStashHLight(Point mousePosition)
 
 	ClearPanel();
 
-	uint16_t itemId = abs(Stash.stashGrids[Stash.GetPage()][slot.x][slot.y]);
-	if (itemId == 0)
+	uint16_t itemId = Stash.stashGrids[Stash.GetPage()][slot.x][slot.y];
+	if (itemId == 0) {
 		return -1;
+	}
 
-	uint16_t ii = itemId - 1;
-	Item &item = Stash.stashList[ii];
-
-	if (item.isEmpty())
+	itemId -= 1;
+	Item &item = Stash.stashList[itemId];
+	if (item.isEmpty()) {
 		return -1;
+	}
 
 	InfoColor = item.getTextColor();
 	if (item._iIdentified) {
@@ -439,7 +440,7 @@ uint16_t CheckStashHLight(Point mousePosition)
 		PrintItemDur(item);
 	}
 
-	return ii;
+	return itemId;
 }
 
 bool UseStashItem(uint16_t c)

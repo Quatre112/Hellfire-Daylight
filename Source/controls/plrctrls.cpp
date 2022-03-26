@@ -60,6 +60,7 @@ namespace {
 int Slot = SLOTXY_INV_FIRST;
 Point ActiveStashSlot = InvalidStashPoint;
 int PreviousInventoryColumn = -1;
+bool BeltReturnsToStash = false;
 
 const Direction FaceDir[3][3] = {
 	// NONE             UP                DOWN
@@ -754,7 +755,7 @@ Point FindClosestStashSlot(Point mousePos)
 /**
  * @brief Figures out where on the body to move when on the first row
  */
-Point InvMoveToBody(int slot)
+Point InventoryMoveToBody(int slot)
 {
 	PreviousInventoryColumn = slot - SLOTXY_INV_ROW1_FIRST;
 	if (slot <= SLOTXY_INV_ROW1_FIRST + 2) { // first 3 general slots
@@ -771,18 +772,8 @@ Point InvMoveToBody(int slot)
 	return GetSlotCoord(0);
 }
 
-/**
- * Move the cursor around in our inventory
- * If mouse coords are at SLOTXY_CHEST_LAST, consider this center of equipment
- * small inventory squares are 29x29 (roughly)
- */
-void InvMove(AxisDirection dir)
+void InventoryMove(AxisDirection dir)
 {
-	static AxisDirectionRepeater repeater(/*min_interval_ms=*/150);
-	dir = repeater.Get(dir);
-	if (dir.x == AxisDirectionX_NONE && dir.y == AxisDirectionY_NONE)
-		return;
-
 	Point mousePos = MousePosition;
 
 	const bool isHoldingItem = pcurs >= CURSOR_FIRSTITEM;
@@ -923,7 +914,7 @@ void InvMove(AxisDirection dir)
 			}
 		} else {
 			if (Slot >= SLOTXY_INV_ROW1_FIRST && Slot <= SLOTXY_INV_ROW1_LAST) {
-				mousePos = InvMoveToBody(Slot);
+				mousePos = InventoryMoveToBody(Slot);
 			} else if (Slot == SLOTXY_CHEST_FIRST || Slot == SLOTXY_HAND_LEFT_FIRST) {
 				Slot = SLOTXY_HEAD_FIRST;
 				mousePos = InvGetEquipSlotCoord(INVLOC_HEAD);
@@ -941,7 +932,7 @@ void InvMove(AxisDirection dir)
 				if (itemId != 0) {
 					for (int i = 1; i < 5; i++) {
 						if (Slot - i * INV_ROW_SLOT_SIZE < SLOTXY_INV_ROW1_FIRST) {
-							mousePos = InvMoveToBody(Slot - (i - 1) * INV_ROW_SLOT_SIZE);
+							mousePos = InventoryMoveToBody(Slot - (i - 1) * INV_ROW_SLOT_SIZE);
 							break;
 						}
 						if (itemId != GetItemIdOnSlot(Slot - i * INV_ROW_SLOT_SIZE)) {
@@ -1056,6 +1047,121 @@ void InvMove(AxisDirection dir)
 		return; // Avoid wobeling when scalled
 	}
 
+	SetCursorPos(mousePos);
+}
+
+/**
+ * Move the cursor around in the inventory
+ * If mouse coords are at SLOTXY_CHEST_LAST, consider this center of equipment
+ * small inventory squares are 29x29 (roughly)
+ */
+void CheckInventoryMove(AxisDirection dir)
+{
+	static AxisDirectionRepeater repeater(/*min_interval_ms=*/150);
+	dir = repeater.Get(dir);
+	if (dir.x == AxisDirectionX_NONE && dir.y == AxisDirectionY_NONE)
+		return;
+
+	InventoryMove(dir);
+}
+
+void StashMove(AxisDirection dir)
+{
+	static AxisDirectionRepeater repeater(/*min_interval_ms=*/150);
+	dir = repeater.Get(dir);
+	if (dir.x == AxisDirectionX_NONE && dir.y == AxisDirectionY_NONE)
+		return;
+
+	if (Slot < 0 && ActiveStashSlot == InvalidStashPoint) {
+		int invSlot = FindClosestInventorySlot(MousePosition);
+		Point invSlotCoord = GetSlotCoord(invSlot);
+		int invDistance = MousePosition.ManhattanDistance(invSlotCoord);
+
+		Point stashSlot = FindClosestStashSlot(MousePosition);
+		Point stashSlotCoord = GetStashSlotCoord(stashSlot);
+		int stashDistance = MousePosition.ManhattanDistance(stashSlotCoord);
+
+		if (invDistance < stashDistance) {
+			BeltReturnsToStash = false;
+			InventoryMove(dir);
+			return;
+		}
+
+		ActiveStashSlot = stashSlot;
+	}
+
+	Item &holdItem = MyPlayer->HoldItem;
+	Size itemSize = holdItem.isEmpty() ? Size { 1, 1 } : GetInventorySize(holdItem);
+
+	if (BeltReturnsToStash && Slot >= SLOTXY_BELT_FIRST && Slot <= SLOTXY_BELT_LAST) {
+		if (dir.y == AxisDirectionY_UP) {
+			int beltSlot = Slot - SLOTXY_BELT_FIRST;
+			ActiveStashSlot = { 2 + beltSlot, 10 - itemSize.height };
+			InvalidateInventorySlot();
+			dir.y = AxisDirectionY_NONE;
+		}
+	}
+
+	if (IsAnyOf(Slot, SLOTXY_INV_ROW1_FIRST, SLOTXY_INV_ROW2_FIRST, SLOTXY_INV_ROW3_FIRST, SLOTXY_INV_ROW4_FIRST)) {
+		if (dir.x == AxisDirectionX_LEFT) {
+			Point slotCoord = GetSlotCoord(Slot);
+			ActiveStashSlot = FindClosestStashSlot(slotCoord) - Displacement { itemSize.width - 1, 0 };
+			InvalidateInventorySlot();
+			dir.x = AxisDirectionX_NONE;
+		}
+	}
+
+	bool isHeadSlot = SLOTXY_HEAD_FIRST <= Slot && Slot <= SLOTXY_HEAD_LAST;
+	bool isLeftHandSlot = SLOTXY_HAND_LEFT_FIRST <= Slot && Slot <= SLOTXY_HAND_LEFT_LAST;
+	bool isLeftRingSlot = Slot == SLOTXY_RING_LEFT;
+	if (isHeadSlot || isLeftHandSlot || isLeftRingSlot) {
+		if (dir.x == AxisDirectionX_LEFT) {
+			Point slotCoord = GetSlotCoord(Slot);
+			ActiveStashSlot = FindClosestStashSlot(slotCoord) - Displacement { itemSize.width - 1, 0 };
+			InvalidateInventorySlot();
+			dir.x = AxisDirectionX_NONE;
+		}
+	}
+
+	if (Slot >= 0) {
+		InventoryMove(dir);
+		return;
+	}
+
+	if (dir.x == AxisDirectionX_LEFT) {
+		if (ActiveStashSlot.x > 0)
+			ActiveStashSlot.x--;
+	} else if (dir.x == AxisDirectionX_RIGHT) {
+		if (ActiveStashSlot.x < 10 - itemSize.width) {
+			ActiveStashSlot.x++;
+		} else {
+			Point stashSlotCoord = GetStashSlotCoord(ActiveStashSlot);
+			Point rightPanelCoord = { GetRightPanel().position.x, stashSlotCoord.y };
+			Slot = FindClosestInventorySlot(rightPanelCoord);
+			ActiveStashSlot = InvalidStashPoint;
+			BeltReturnsToStash = false;
+		}
+	}
+	if (dir.y == AxisDirectionY_UP) {
+		if (ActiveStashSlot.y > 0)
+			ActiveStashSlot.y--;
+	} else if (dir.y == AxisDirectionY_DOWN) {
+		if (ActiveStashSlot.y < 10 - itemSize.height) {
+			ActiveStashSlot.y++;
+		} else if ((holdItem.isEmpty() || CanBePlacedOnBelt(holdItem)) && ActiveStashSlot.x > 1) {
+			int beltSlot = ActiveStashSlot.x - 2;
+			Slot = SLOTXY_BELT_FIRST + beltSlot;
+			ActiveStashSlot = InvalidStashPoint;
+			BeltReturnsToStash = true;
+		}
+	}
+
+	Point mousePos;
+	if (Slot >= 0) {
+		mousePos = GetSlotCoord(Slot);
+	} else if (ActiveStashSlot != InvalidStashPoint) {
+		mousePos = GetStashSlotCoord(ActiveStashSlot);
+	}
 	SetCursorPos(mousePos);
 }
 
@@ -1215,8 +1321,11 @@ using HandleLeftStickOrDPadFn = void (*)(devilution::AxisDirection);
 
 HandleLeftStickOrDPadFn GetLeftStickOrDPadGameUIHandler()
 {
+	if (IsStashOpen) {
+		return &StashMove;
+	}
 	if (invflag) {
-		return &InvMove;
+		return &CheckInventoryMove;
 	}
 	if (chrflag && Players[MyPlayerId]._pStatPts > 0) {
 		return &AttrIncBtnSnap;
