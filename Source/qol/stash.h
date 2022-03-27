@@ -47,6 +47,7 @@ extern int WithdrawGoldValue;
 Point GetStashSlotCoord(Point slot);
 void InitStash();
 void FreeStashGFX();
+void TransferItemToInventory(Player &player, uint16_t itemId);
 /**
  * @brief Render the inventory panel to the given buffer.
  */

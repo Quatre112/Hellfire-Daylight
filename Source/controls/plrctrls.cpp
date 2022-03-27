@@ -1836,26 +1836,17 @@ void PerformSpellAction()
 
 void CtrlUseInvItem()
 {
-	Item *item;
-
 	if (pcursinvitem == -1)
 		return;
 
 	auto &myPlayer = Players[MyPlayerId];
 
-	if (pcursinvitem < INVITEM_INV_FIRST)
-		item = &myPlayer.InvBody[pcursinvitem];
-	else if (pcursinvitem <= INVITEM_INV_LAST)
-		item = &myPlayer.InvList[pcursinvitem - INVITEM_INV_FIRST];
-	else
-		item = &myPlayer.SpdList[pcursinvitem - INVITEM_BELT_FIRST];
-
-	if (item->IsScroll() && spelldata[item->_iSpell].sTargeted) {
+	Item &item = GetInventoryItem(myPlayer, pcursinvitem);
+	if (item.IsScroll() && spelldata[item._iSpell].sTargeted) {
 		return;
 	}
-
 	int itemId = GetItemIdOnSlot(Slot);
-	if (item->isEquipment()) {
+	if (item.isEquipment()) {
 		CheckInvItem(true, false); // auto-equip if it's an equipment
 	} else {
 		UseInvItem(MyPlayerId, pcursinvitem);
@@ -1884,10 +1875,17 @@ void CtrlUseStashItem()
 
 void PerformSecondaryAction()
 {
+	auto &myPlayer = Players[MyPlayerId];
 	if (invflag) {
 		if (pcurs > CURSOR_HAND && pcurs < CURSOR_FIRSTITEM) {
 			TryIconCurs();
 			NewCursor(CURSOR_HAND);
+		} else if (IsStashOpen) {
+			if (pcursstashitem != uint16_t(-1)) {
+				TransferItemToInventory(myPlayer, pcursstashitem);
+			} else if (pcursinvitem != -1) {
+				TransferItemToStash(myPlayer, pcursinvitem);
+			}
 		} else {
 			CtrlUseInvItem();
 		}
@@ -1904,7 +1902,6 @@ void PerformSecondaryAction()
 	} else if (pcursobj != -1) {
 		NetSendCmdLocParam1(true, CMD_OPOBJXY, cursPosition, pcursobj);
 	} else {
-		auto &myPlayer = Players[MyPlayerId];
 		if (pcursmissile != nullptr) {
 			MakePlrPath(myPlayer, pcursmissile->position.tile, true);
 			myPlayer.destAction = ACTION_WALK;

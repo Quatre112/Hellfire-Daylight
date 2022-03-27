@@ -149,7 +149,7 @@ void CheckStashPaste(Point cursorPosition)
 	NewCursor(cn);
 }
 
-void CheckStashCut(Point cursorPosition, bool automaticMove, bool dropItem)
+void CheckStashCut(Point cursorPosition, bool automaticMove)
 {
 	auto &player = Players[MyPlayerId];
 
@@ -222,23 +222,10 @@ void CheckStashCut(Point cursorPosition, bool automaticMove, bool dropItem)
 			holdItem._itype = ItemType::None;
 		} else {
 			NewCursor(holdItem._iCurs + CURSOR_FIRSTITEM);
-			if (!IsHardwareCursor() && !dropItem) {
+			if (!IsHardwareCursor()) {
 				// For a hardware cursor, we set the "hot point" to the center of the item instead.
 				SetCursorPos(cursorPosition - Displacement(cursSize / 2));
 			}
-		}
-	}
-
-	if (dropItem && !holdItem.isEmpty()) {
-		if (invflag) {
-			if (AutoPlaceItemInInventory(player, holdItem, true)) {
-				holdItem._itype = ItemType::None;
-				NewCursor(CURSOR_HAND);
-			} else {
-				player.SaySpecific(HeroSpeech::IHaveNoRoom);
-			}
-		} else {
-			TryDropItem();
 		}
 	}
 }
@@ -289,6 +276,27 @@ void InitStash()
 
 	LoadArt("data\\stash.pcx", &StashPanelArt, 1);
 	LoadArt("data\\stashnavbtns.pcx", &StashNavButtonArt, 5);
+}
+
+void TransferItemToInventory(Player &player, uint16_t itemId)
+{
+	if (itemId == uint16_t(-1)) {
+		return;
+	}
+
+	Item &item = Stash.stashList[itemId];
+	if (item.isEmpty()) {
+		return;
+	}
+
+	if (!AutoPlaceItemInInventory(player, item, true)) {
+		player.SaySpecific(HeroSpeech::IHaveNoRoom);
+		return;
+	}
+
+	PlaySFX(ItemInvSnds[ItemCAnimTbl[item._iCurs]]);
+
+	Stash.RemoveStashItem(itemId);
 }
 
 int StashButtonPressed = -1;
@@ -393,8 +401,10 @@ void CheckStashItem(Point mousePosition, bool isShiftHeld, bool isCtrlHeld)
 {
 	if (pcurs >= CURSOR_FIRSTITEM) {
 		CheckStashPaste(mousePosition);
+	} else if (isCtrlHeld) {
+		TransferItemToInventory(*MyPlayer, pcursstashitem);
 	} else {
-		CheckStashCut(mousePosition, isShiftHeld, isCtrlHeld);
+		CheckStashCut(mousePosition, isShiftHeld);
 	}
 }
 
