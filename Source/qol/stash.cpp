@@ -230,24 +230,6 @@ void CheckStashCut(Point cursorPosition, bool automaticMove)
 	}
 }
 
-void StartGoldWithdraw()
-{
-	CloseGoldDrop();
-
-	InitialWithdrawGoldValue = std::min(RoomForGold(), Stash.gold);
-
-	if (talkflag)
-		control_reset_talk();
-
-	Point start = GetPanelPosition(UiPanels::Stash, { 67, 128 });
-	SDL_Rect rect = MakeSdlRect(start.x, start.y, 180, 20);
-	SDL_SetTextInputRect(&rect);
-
-	IsWithdrawGoldOpen = true;
-	WithdrawGoldValue = 0;
-	SDL_StartTextInput();
-}
-
 void WithdrawGold(Player &player, int amount)
 {
 	AddGoldToInventory(player, amount);
@@ -560,6 +542,24 @@ void StashStruct::RefreshItemStatFlags()
 	for (auto &item : Stash.stashList) {
 		item._iStatFlag = MyPlayer->CanUseItem(item);
 	}
+}
+
+void StartGoldWithdraw()
+{
+	CloseGoldDrop();
+
+	InitialWithdrawGoldValue = std::min(RoomForGold(), Stash.gold);
+
+	if (talkflag)
+		control_reset_talk();
+
+	Point start = GetPanelPosition(UiPanels::Stash, { 67, 128 });
+	SDL_Rect rect = MakeSdlRect(start.x, start.y, 180, 20);
+	SDL_SetTextInputRect(&rect);
+
+	IsWithdrawGoldOpen = true;
+	WithdrawGoldValue = 0;
+	SDL_StartTextInput();
 }
 
 void WithdrawGoldKeyPress(char vkey)

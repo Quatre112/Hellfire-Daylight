@@ -58,6 +58,7 @@ uint16_t CheckStashHLight(Point mousePosition);
 void CheckStashButtonRelease(Point mousePosition);
 void CheckStashButtonPress(Point mousePosition);
 
+void StartGoldWithdraw();
 void WithdrawGoldKeyPress(char vkey);
 void DrawGoldWithdraw(const Surface &out, int amount);
 void CloseGoldWithdraw();
