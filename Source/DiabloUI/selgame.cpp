@@ -112,7 +112,11 @@ void selgame_GameSelection_Init()
 		return;
 	}
 
-	CopyUtf8(selgame_Ip, sgOptions.Network.szPreviousHost, sizeof(selgame_Ip));
+	if (provider == SELCONN_ZT) {
+		CopyUtf8(selgame_Ip, sgOptions.Network.szPreviousZTGame, sizeof(selgame_Ip));
+	} else {
+		CopyUtf8(selgame_Ip, sgOptions.Network.szPreviousHost, sizeof(selgame_Ip));
+	}
 
 	selgame_FreeVectors();
 
@@ -185,11 +189,15 @@ void selgame_GameSelection_Focus(int value)
 		CopyUtf8(selgame_Description, _("Create a new public game that anyone can join with a difficulty setting of your choice."), sizeof(selgame_Description));
 		break;
 	case 2:
-		CopyUtf8(selgame_Description, _("Enter an IP or a hostname and join a game already in progress at that address."), sizeof(selgame_Description));
+		if (provider == SELCONN_ZT) {
+			CopyUtf8(selgame_Description, _("Enter an the Game ID and join a game already in progress."), sizeof(selgame_Description));
+		} else {
+			CopyUtf8(selgame_Description, _("Enter an IP or a hostname and join a game already in progress."), sizeof(selgame_Description));
+		}
 		break;
 	default:
 		const auto &gameInfo = Gamelist[vecSelGameDlgItems[value]->m_value - 3];
-		std::string infoString = _("Join the public game already in progress at this address.");
+		std::string infoString = _("Join the public game already in progress.");
 		infoString.append("\n\n");
 		if (IsGameCompatible(gameInfo.gameData)) {
 			string_view difficulty;
@@ -303,13 +311,20 @@ void selgame_GameSelection_Select(int value)
 		break;
 	}
 	case 2: {
-		title = _("Join TCP Games").c_str();
+		title = fmt::format(_("Join {:s} Games"), _(ConnectionNames[provider])).c_str();
+
+		std::string intputHint;
+		if (provider == SELCONN_ZT) {
+			intputHint = _("Enter Game ID");
+		} else {
+			intputHint = _("Enter address");
+		}
 
 		SDL_Rect rect4 = { (Sint16)(PANEL_LEFT + 305), (Sint16)(UI_OFFSET_Y + 211), 285, 33 };
-		vecSelGameDialog.push_back(std::make_unique<UiArtText>(_("Enter address").c_str(), rect4, UiFlags::AlignCenter | UiFlags::FontSize30 | UiFlags::ColorUiSilver, 3));
+		vecSelGameDialog.push_back(std::make_unique<UiArtText>(intputHint.c_str(), rect4, UiFlags::AlignCenter | UiFlags::FontSize30 | UiFlags::ColorUiSilver, 3));
 
 		SDL_Rect rect5 = { (Sint16)(PANEL_LEFT + 305), (Sint16)(UI_OFFSET_Y + 314), 285, 33 };
-		vecSelGameDialog.push_back(std::make_unique<UiEdit>(_("Enter address"), selgame_Ip, 128, false, rect5, UiFlags::FontSize24 | UiFlags::ColorUiGold));
+		vecSelGameDialog.push_back(std::make_unique<UiEdit>(intputHint, selgame_Ip, 128, false, rect5, UiFlags::FontSize24 | UiFlags::ColorUiGold));
 
 		SDL_Rect rect6 = { (Sint16)(PANEL_LEFT + 299), (Sint16)(UI_OFFSET_Y + 427), 140, 35 };
 		vecSelGameDialog.push_back(std::make_unique<UiArtTextButton>(_("OK"), &UiFocusNavigationSelect, rect6, UiFlags::AlignCenter | UiFlags::VerticalCenter | UiFlags::FontSize30 | UiFlags::ColorUiGold));
@@ -564,7 +579,11 @@ void selgame_Password_Select(int /*value*/)
 	SDL_ClearError();
 
 	if (selgame_selectedGame > 1) {
-		strcpy(sgOptions.Network.szPreviousHost, selgame_Ip);
+		if (provider == SELCONN_ZT) {
+			strcpy(sgOptions.Network.szPreviousZTGame, selgame_Ip);
+		} else {
+			strcpy(sgOptions.Network.szPreviousHost, selgame_Ip);
+		}
 		if (SNetJoinGame(selgame_Ip, gamePassword, gdwPlayerId)) {
 			if (!IsGameCompatibleWithErrorMessage(*m_game_data)) {
 				InitGameInfo();
