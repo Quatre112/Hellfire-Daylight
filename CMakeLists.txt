@@ -74,7 +74,7 @@ if(NOT VERSION_SUFFIX)
   endif()
 endif()
 
-project(DevilutionX
+project(Hellfire-Daylight
   VERSION ${VERSION_NUM}
   LANGUAGES C CXX)
 set(PROJECT_VERSION_WITH_SUFFIX "${VERSION_PREFIX}${VERSION_SUFFIX}")
@@ -319,7 +319,7 @@ include(Dependencies)
 
 add_subdirectory(Source)
 
-set(BIN_TARGET devilutionx)
+set(BIN_TARGET hf-daylight)
 if(NINTENDO_3DS)
   set(BIN_TARGET ${BIN_TARGET}.elf)
 endif()
@@ -377,8 +377,8 @@ if(APPLE)
   set_source_files_properties("./Packaging/apple/AppIcon.icns" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
   set(MACOSX_BUNDLE_GUI_IDENTIFIER com.diasurgical.devilutionx)
   set(MACOSX_BUNDLE_COPYRIGHT Unlicense)
-  set(MACOSX_BUNDLE_BUNDLE_NAME devilutionx)
-  set(MACOSX_BUNDLE_DISPLAY_NAME DevilutionX)
+  set(MACOSX_BUNDLE_BUNDLE_NAME hf-daylight)
+  set(MACOSX_BUNDLE_DISPLAY_NAME HF-Daylight)
   set(MACOSX_BUNDLE_INFO_STRING ${PROJECT_VERSION})
   set(MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION})
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION})
@@ -429,7 +429,7 @@ if(NINTENDO_SWITCH)
 endif()
 
 if(VITA)
-  set(VITA_APP_NAME "devilutionX")
+  set(VITA_APP_NAME "HF-Daylight")
   set(VITA_TITLEID  "DVLX00001")
   set(VITA_VERSION  "01.00")
   set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d PARENTAL_LEVEL=1")
@@ -443,7 +443,7 @@ if(VITA)
       FILE ${DEVILUTIONX_MPQ} devilutionx.mpq
     )
   else()
-    vita_create_vpk(devilutionx.vpk ${VITA_TITLEID} devilutionx.self
+    vita_create_vpk(hf-daylight.vpk ${VITA_TITLEID} devilutionx.self
       VERSION ${VITA_VERSION}
       NAME ${VITA_APP_NAME}
       FILE Packaging/vita/sce_sys sce_sys
