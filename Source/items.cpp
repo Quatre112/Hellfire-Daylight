@@ -1445,13 +1445,13 @@ _item_indexes RndTypeItems(ItemType itemType, int imid, int lvl)
 
 _unique_items CheckUnique(Item &item, int lvl, int uper, bool recreate)
 {
-	std::vector<int8_t> potentialUniques;
+	std::vector<uint8_t> potentialUniques;
 
 	if (GenerateRnd(100) > uper)
 		return UITEM_INVALID;
 
 	int idata = item.IDidx;  // moved this line from below for reuse
-	for (int8_t j = 0; UniqueItems[j].UIItemId != UITYPE_INVALID; j++) {
+	for (uint8_t j = 0; UniqueItems[j].UIItemId != UITYPE_INVALID; j++) {
 		if (!IsUniqueAvailable(j))
 			break;
 		if (UniqueItems[j].UIItemId == AllItemsList[idata].iItemId
