@@ -1445,7 +1445,7 @@ _item_indexes RndTypeItems(ItemType itemType, int imid, int lvl)
 
 _unique_items CheckUnique(Item &item, int lvl, int uper, bool recreate)
 {
-	std::vector<uint8_t> potentialUniques;
+	std::vector<int8_t> potentialUniques;
 
 	if (GenerateRnd(100) > uper)
 		return UITEM_INVALID;
