@@ -1451,7 +1451,7 @@ _unique_items CheckUnique(Item &item, int lvl, int uper, bool recreate)
 		return UITEM_INVALID;
 
 	int idata = item.IDidx;  // moved this line from below for reuse
-	for (uint8_t j = 0; UniqueItems[j].UIItemId != UITYPE_INVALID; j++) {
+	for (int8_t j = 0; UniqueItems[j].UIItemId != UITYPE_INVALID; j++) {
 		if (!IsUniqueAvailable(j))
 			break;
 		if (UniqueItems[j].UIItemId == AllItemsList[idata].iItemId
